@@ -3,9 +3,8 @@
 ### create the dev container
 
 Create a netbox folder.  
-clone your fork of the netbox-contract repository. 
-Copy the utils/.devcontainer folder to your root directory.  
-Update the environment variables in the .devcontainer/env folder.  
+clone the netbox-contract repository. 
+Copy the .devcontainer, requirement.txt, database-init.py, netbox-configuration.py and netbox-configuration-final.py folder/files to your root directory.  
 
 Save the workspace definition file to the root of the netbox folder
 File > Save workspace as  
@@ -17,15 +16,16 @@ Dev Container: Rebuild container and reopen in container
 
 Install database package.  
 postgresql python adapter [psycopg](https://www.psycopg.org/docs/install.html)  
+Copy the requirements.txt file to ythe root of the netbox folder
 
 ```bash
-pip install -r netbox-contract/utils/requirements.txt
+pip install -r requirements.txt
 ```
 If the db already exist and you want to start over from scratch uncomment the corresponding lines int he database_init.py file.  
 Run the initialization script
 
 ```bash
-python3 netbox-contract/utils/database_init.py
+python3 database_init.py
 ```
 
 If the db already exist and you want to start over from scratch uncomment the corresponding lines int he database_init.py file.  
@@ -50,14 +50,14 @@ You do not need to create the Netbox system user
 python3 netbox/netbox/generate_secret_key.py
 ```
 
-update the netbox-contract/utils/netbox-configuration.py with this secret key
+update the netbox-configuration.py with this secret key
 
 ### update netbox configuration
 
 Update the configuration with your env variables.  
 
 ```bash
-cp netbox-contract/utils/netbox-configuration.py netbox/netbox/netbox/configuration.py
+cp netbox-configuration.py netbox/netbox/netbox/configuration.py
 ```
 
 ### Run the Upgrade Script
@@ -90,7 +90,7 @@ python3 -m pip install -e netbox-contract
 Update the configuration:
 
 ```bash
-cp netbox-contract/utils/netbox-configuration-final.py netbox/netbox/netbox/configuration.py
+cp netbox-configuration-final.py netbox/netbox/netbox/configuration.py
 ```
 
 run database migrations:

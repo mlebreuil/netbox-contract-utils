@@ -4,12 +4,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 from psycopg2 import connect, extensions
 
-dotenv_path = Path('.devcontainer/env/postgres.env')
-load_dotenv(dotenv_path=dotenv_path)
+# dotenv_path = Path('.devcontainer/env/postgres.env')
+# load_dotenv(dotenv_path=dotenv_path)
 
-db = os.getenv('POSTGRES_DB')
-user = os.getenv('POSTGRES_USER')
-password = os.getenv('POSTGRES_PASSWORD')
+# db = os.getenv('POSTGRES_DB')
+# user = os.getenv('POSTGRES_USER')
+# password = os.getenv('POSTGRES_PASSWORD')
+
+db 0 'netbox'
+user = 'netbox'
+password = 'netbox'
 
 
 # Connect to your postgres DB
