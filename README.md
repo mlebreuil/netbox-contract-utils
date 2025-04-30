@@ -73,6 +73,17 @@ source netbox/venv/bin/activate
 python3 netbox/netbox/manage.py createsuperuser
 ```
 
+### Load netbox demo data$
+
+get the database dump from [netbox-demo-data](https://github.com/netbox-community/netbox-demo-data) repository.
+
+```bash
+psql --host=db --username=postgres --password -c 'drop database netbox'
+psql --host=db --username=postgres --password -c 'create database netbox'
+psql --host=db --username=postgres --password netbox < demo-data.sql
+psql --host=db --username=postgres --password -c "alter database netbox owner to netbox;"
+```
+
 ### Test installation
 
 ```bash
@@ -142,6 +153,7 @@ Restore:
 psql --host=db --username=postgres --password -c 'drop database netbox'
 psql --host=db --username=postgres --password -c 'create database netbox'
 psql --host=db --username=postgres --password netbox < netbox.sql
+psql --host=db --username=postgres --password -c "alter database netbox owner to netbox;"
 ```  
 
 ## Model changes
