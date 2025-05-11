@@ -15,9 +15,9 @@ ALLOWED_HOSTS = ['127.0.0.1']
 # PostgreSQL database configuration. See the Django documentation for a complete list of available parameters:
 #   https://docs.djangoproject.com/en/stable/ref/settings/#databases
 DATABASE = {
-    'NAME': os.getenv('POSTGRES_DB'),  # Database name
-    'USER': os.getenv('POSTGRES_USER'),  # PostgreSQL username
-    'PASSWORD': os.getenv('POSTGRES_PASSWORD'),  # PostgreSQL password
+    'NAME': 'netbox',  # Database name
+    'USER': 'netbox',  # PostgreSQL username
+    'PASSWORD': 'netbox',  # PostgreSQL password
     'HOST': 'db',  # Database server
     'PORT': '',  # Database port (leave blank for default)
     'CONN_MAX_AGE': 300,  # Max database connection age

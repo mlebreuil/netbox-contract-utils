@@ -11,7 +11,7 @@ from psycopg2 import connect, extensions
 # user = os.getenv('POSTGRES_USER')
 # password = os.getenv('POSTGRES_PASSWORD')
 
-db 0 'netbox'
+db = 'netbox'
 user = 'netbox'
 password = 'netbox'
 

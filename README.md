@@ -6,6 +6,9 @@ Create a netbox folder.
 clone the netbox-contract repository. 
 Copy the .devcontainer, requirement.txt, database-init.py, netbox-configuration.py and netbox-configuration-final.py folder/files to your root directory.  
 
+Get [netbox demo data](https://github.com/netbox-community/netbox-demo-data) relevant for the version you are working on.  
+
+
 Save the workspace definition file to the root of the netbox folder
 File > Save workspace as  
 
@@ -50,7 +53,7 @@ You do not need to create the Netbox system user
 python3 netbox/netbox/generate_secret_key.py
 ```
 
-update the netbox-configuration.py with this secret key
+update the netbox-configuration.py and netbox-configuration-final.py with this secret key  
 
 ### update netbox configuration
 
@@ -126,6 +129,13 @@ python3 netbox/netbox/manage.py runserver
 ```
 
 ## Upgrade Netbox
+
+Make sure that netbox-contract is added to the netbox local_requirements.txt. 
+
+```local_reuirements.txt
+../netbox-contract
+```
+
 
 ```bash
 cd netbox
