@@ -12,18 +12,20 @@ Get [netbox demo data](https://github.com/netbox-community/netbox-demo-data) rel
 Save the workspace definition file to the root of the netbox folder
 File > Save workspace as  
 
-Press F1
-Dev Container: Rebuild container and reopen in container
+start the containers
+```bash
+cd .devcontainer
+docker compose up -d
+```
+
+Either select Dev Containers: Attach to Running Container... from the Command Palette (F1)   
+or use the Remote Explorer in the Activity Bar and from the Containers view, select the Attach to Container inline action on the container you want to connect to.
 
 ### initialize the database
 
 Install database package.  
 postgresql python adapter [psycopg](https://www.psycopg.org/docs/install.html)  
-Copy the requirements.txt file to ythe root of the netbox folder
 
-```bash
-pip install -r requirements.txt
-```
 If the db already exist and you want to start over from scratch uncomment the corresponding lines int he database_init.py file.  
 Run the initialization script
 
@@ -31,11 +33,11 @@ Run the initialization script
 python3 database_init.py
 ```
 
-If the db already exist and you want to start over from scratch uncomment the corresponding lines int he database_init.py file.  
-
 ## Install Netbox
  
-[netbox installtion doc](https://netboxlabs.com/docs/netbox/en/stable/installation/3-netbox/)
+[netbox installtion doc](https://netboxlabs.com/docs/netbox/installation/)
+
+Postgres and Redis already exist as separate containers (db and redis respectively) as part of the devcontainer setup.
 
 ### Clone the netbox repository
 
@@ -76,9 +78,16 @@ source netbox/venv/bin/activate
 python3 netbox/netbox/manage.py createsuperuser
 ```
 
-### Load netbox demo data$
+### Load netbox demo data
 
-get the database dump from [netbox-demo-data](https://github.com/netbox-community/netbox-demo-data) repository.
+Install the psql utility
+
+```bash
+sudo apt update
+sudo apt install -y postgresql-common
+sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+sudo apt install postgresql-client
+```
 
 ```bash
 psql --host=db --username=postgres --password -c 'drop database netbox'
