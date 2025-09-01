@@ -12,13 +12,13 @@ Get [netbox demo data](https://github.com/netbox-community/netbox-demo-data) rel
 Save the workspace definition file to the root of the netbox folder
 File > Save workspace as  
 
+update the .env file in the .devcontainer folder.  
+
 Press F1
 Dev Container: Rebuild container and reopen in container
 
 ### initialize the database
 
-Install database package.  
-postgresql python adapter [psycopg](https://www.psycopg.org/docs/install.html)  
 Copy the requirements.txt file to ythe root of the netbox folder
 
 ```bash
@@ -42,7 +42,7 @@ If the db already exist and you want to start over from scratch uncomment the co
 ```bash
 mkdir netbox
 cd netbox
-git clone -b master --depth 1 https://github.com/netbox-community/netbox.git .
+git clone https://github.com/netbox-community/netbox.git .
 ```
 
 You do not need to create the Netbox system user

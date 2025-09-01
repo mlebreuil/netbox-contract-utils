@@ -1,42 +1,37 @@
 import os
 from pathlib import Path
-
 from dotenv import load_dotenv
-from psycopg2 import connect, extensions
 
-# dotenv_path = Path('.devcontainer/env/postgres.env')
-# load_dotenv(dotenv_path=dotenv_path)
+from psycopg import connect
 
-# db = os.getenv('POSTGRES_DB')
-# user = os.getenv('POSTGRES_USER')
-# password = os.getenv('POSTGRES_PASSWORD')
+dotenv_path = Path('.devcontainer/.env')
+load_dotenv(dotenv_path=dotenv_path)
 
-db = 'netbox'
-user = 'netbox'
-password = 'netbox'
+netbox_db = os.getenv('NETBOX_DB_NAME')
+netbox_user = os.getenv('NETBOX_DB_USER')
+netbox_password = os.getenv('NETBOX_DB_PASSWORD')
+
+host = 'db'
+postgres_user = os.getenv('POSTGRES_USER')
+postgres_password = os.getenv('POSTGRES_PASSWORD')
 
 
 # Connect to your postgres DB
-conn = connect('host=db user=postgres password=postgres')
-
-# set the isolation level for the connection's cursors
-# will raise ActiveSqlTransaction exception otherwise
-autocommit = extensions.ISOLATION_LEVEL_AUTOCOMMIT
-conn.set_isolation_level(autocommit)
+conn = connect(host=host, user=postgres_user, password=postgres_password, autocommit=True)
 
 # Open a cursor to perform database operations
 cur = conn.cursor()
 
 # The below 2 lines are required if the database already exists
-# cur.execute(f"DROP DATABASE {db};")
-# cur.execute(f"DROP USER {user};")
+cur.execute(f"DROP DATABASE {netbox_db};")
+cur.execute(f"DROP USER {netbox_user};")
 
-cur.execute(f'CREATE DATABASE {db};')
-cur.execute(f"CREATE USER netbox WITH PASSWORD '{password}';")
-cur.execute(f'ALTER DATABASE {db} OWNER TO {user};')
+cur.execute(f'CREATE DATABASE {netbox_db};')
+cur.execute(f"CREATE USER {netbox_user} WITH PASSWORD '{netbox_password}';")
+cur.execute(f'ALTER DATABASE {netbox_db} OWNER TO {netbox_user};')
 
 # Required to run unittest as the django user need to create the test db
-cur.execute(f'ALTER ROLE {user} CREATEDB;')
+cur.execute(f'ALTER ROLE {netbox_user} CREATEDB;')
 
 # Make the changes to the database persistent
 conn.commit()
@@ -46,11 +41,9 @@ cur.close()
 conn.close()
 
 # required on postgres v15 or later
-conn = connect(host='db', user='postgres', password='postgres', database=db)
-autocommit = extensions.ISOLATION_LEVEL_AUTOCOMMIT
-conn.set_isolation_level(autocommit)
+conn = connect(host=host, user=postgres_user, password=postgres_password, dbname=netbox_db)
 cur = conn.cursor()
-cur.execute(f'GRANT CREATE ON SCHEMA public TO {user};')
+cur.execute(f'GRANT CREATE ON SCHEMA public TO {netbox_user};')
 conn.commit()
 cur.close()
 conn.close()
