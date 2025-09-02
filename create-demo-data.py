@@ -1,12 +1,11 @@
 from datetime import date
 from decimal import Decimal
 
-from circuits.models import Circuit, CircuitType, Provider, ProviderAccount
-from dcim.models import Device, DeviceRole, DeviceType, Manufacturer, Site
+from circuits.models import Circuit, Provider
+from dcim.models import Device
 from django.contrib.contenttypes.models import ContentType
 from netbox.choices import ColorChoices
-from tenancy.models import Tenant
-from utilities.testing import ViewTestCases
+from extras.scripts import Script
 
 from netbox_contract.models import (
     AccountingDimension,
@@ -20,131 +19,120 @@ from netbox_contract.models import (
 )
 
 
-# Create test provider
-Provider.objects.create(name='Provider A', slug='provider-a')
+class CreateDemoData(Script):
+    class Meta:
+        name = "Create Netbox Contract demo data"
+        description = "Create demo data for testing and development"
+        field_order = []
 
-# create test tenant
-Tenant.objects.create(name='Tenant 1', slug='tenant-1')
+    def run(self, data, commit):
+        self.log_info("Creating demo data...")
 
-# Create test service provider
-ServiceProvider.objects.create(name='Service Provider A', slug='service-provider-a')
+        # Get test device and circuit from netbox test data
+        device = Device.objects.get(id=1)
+        circuit = Circuit.objects.get(id=1)
 
-# Create test contract types
-contract_types = ContractType.objects.bulk_create([
-    ContractType(name='Contract Type 1', description='Description for type 1', color=ColorChoices.COLOR_BLUE),
-    ContractType(name='Contract Type 2', description='Description for type 2', color=ColorChoices.COLOR_RED),
-])
+        # Create test service provider
+        service_provider1 = ServiceProvider.objects.create(name='Service Provider A', slug='service-provider-a')
 
-for contract_type in contract_types:
-    contract_type.save()
+        # Create test contract types
+        contract_types = ContractType.objects.bulk_create([
+            ContractType(name='Telecom', description='Telecom contract', color=ColorChoices.COLOR_BLUE),
+            ContractType(name='Maintenance', description='Maintenance contract', color=ColorChoices.COLOR_RED),
+        ])
 
-# Create three Contracts
-contract1 = Contract.objects.create(
-    name='Contract1',
-    contract_type=ContractType.objects.get(name='Contract Type 1'),
-    external_partie_object_type=ContentType.objects.get_for_model(Provider),
-    external_partie_object_id=Provider.objects.get(slug='provider-a').id,
-    internal_partie='default',
-    status=StatusChoices.STATUS_ACTIVE,
-    start_date=date(2025, 1, 1),
-    end_date=date(2025, 12, 31),
-    currency='usd',
-    yrc=Decimal(1000),
-    invoice_frequency=1
-)
+        for contract_type in contract_types:
+            contract_type.save()
 
-contract2 = Contract.objects.create(
-    name='Contract2',
-    contract_type=ContractType.objects.get(name='Contract Type 2'),
-    external_partie_object_type=ContentType.objects.get_for_model(Provider),
-    external_partie_object_id=Provider.objects.get(slug='provider-a').id,
-    internal_partie='default',
-    status=StatusChoices.STATUS_ACTIVE,
-    start_date=date(2025, 1, 1),
-    end_date=date(2025, 12, 31),
-    currency='usd',
-    yrc=Decimal(1000),
-    invoice_frequency=1
-)
+        # Create three Contracts
+        device_contract = Contract.objects.create(
+            name='MaintenanceContract1',
+            contract_type=ContractType.objects.get(name='Maintenance'),
+            external_party_object_type=ContentType.objects.get_for_model(ServiceProvider),
+            external_party_object_id=service_provider1.id,
+            internal_party='default',
+            tenant=device.tenant,
+            status=StatusChoices.STATUS_ACTIVE,
+            start_date=date(2025, 1, 1),
+            end_date=date(2025, 12, 31),
+            currency='usd',
+            yrc=Decimal(1500),
+            invoice_frequency=12
+        )
 
-contract3 = Contract.objects.create(
-    name='Contract3',
-    external_partie_object_type=ContentType.objects.get_for_model(Provider),
-    external_partie_object_id=Provider.objects.get(slug='provider-a').id,
-    internal_partie='default',
-    status=StatusChoices.STATUS_ACTIVE,
-    start_date=date(2025, 1, 1),
-    end_date=date(2025, 12, 31),
-    currency='usd',
-    yrc=Decimal(1000),
-    invoice_frequency=1
-)
+        circuit_contract = Contract.objects.create(
+            name='TelecomContract1',
+            contract_type=ContractType.objects.get(name='Telecom'),
+            external_party_object_type=ContentType.objects.get_for_model(Provider),
+            external_party_object_id=circuit.provider.id,
+            internal_party='default',
+            tenant=circuit.tenant,
+            status=StatusChoices.STATUS_ACTIVE,
+            start_date=date(2025, 1, 1),
+            end_date=date(2025, 12, 31),
+            currency='usd',
+            mrc=Decimal(1000),
+            invoice_frequency=1
+        )
 
-# Create test assignements
-assignements = ContractAssignment.objects.bulk_create([
-    ContractAssignment(
-        content_type=ContentType.objects.get_for_model(Device),
-        content_object=device1,
-        contract=contract1
-    ),
-    ContractAssignment(
-        content_type=ContentType.objects.get_for_model(Circuit),
-        content_object=circuit1,
-        contract=contract2
-    )
-])
+        # Create test assignments
+        assignments = ContractAssignment.objects.bulk_create([
+            ContractAssignment(
+                content_type=ContentType.objects.get_for_model(Device),
+                content_object=device,
+                contract=device_contract
+            ),
+            ContractAssignment(
+                content_type=ContentType.objects.get_for_model(Circuit),
+                content_object=circuit,
+                contract=circuit_contract
+            )
+        ])
 
-for assignement in assignements:
-    assignement.save()
+        for assignment in assignments:
+            assignment.save()
 
-# Create test invoices
-invoices = Invoice.objects.bulk_create([
-    Invoice(number='Invoice1', template=False, date=date(2025, 1, 25),
-            period_start=date(2025, 1, 1), period_end=date(2025, 1, 31),
-            currency='usd', amount=Decimal(100)),
-    Invoice(number='Invoice2', template=False, date=date(2025, 2, 25),
-            period_start=date(2025, 2, 1), period_end=date(2025, 2, 28),
-            currency='usd', amount=Decimal(100)),
-    Invoice(number='Invoice3', template=False, date=date(2025, 3, 25),
-            period_start=date(2025, 3, 1), period_end=date(2025, 3, 31),
-            currency='usd', amount=Decimal(100))
-])
+        # Create invoice templates
+        maintenance_invoice_template = Invoice(number='dummy1', template=True, currency='usd', amount=Decimal(1500), comments='Maintenance contract template')
+        telecom_invoice_template = Invoice(number='dummy2', template=True, currency='usd', amount=Decimal(1000), comments='Telecom contract template')
 
-# associate invoices to contract
-for invoice in invoices:
-    invoice.save()
-    invoice.contracts.add(contract1)
+        # associate invoices to contract
 
- 
-# Create test invoice lines
+        maintenance_invoice_template.save()
+        maintenance_invoice_template.contracts.add(device_contract)
 
-invoice_lines = InvoiceLine.objects.bulk_create([
-    InvoiceLine(invoice=invoices[0], currency='usd', amount=Decimal(50)),
-    InvoiceLine(invoice=invoices[0], currency='usd', amount=Decimal(50)),
-])
+        telecom_invoice_template.save()
+        telecom_invoice_template.contracts.add(circuit_contract)
 
-for invoice_line in invoice_lines:
-    invoice_line.save()
+        # Create test invoice lines
+        maintenance_invoice_line = InvoiceLine(invoice=maintenance_invoice_template, currency='usd', amount=Decimal(1500))
+        telecom_invoice_line = InvoiceLine(invoice=telecom_invoice_template, currency='usd', amount=Decimal(1000))
 
 
-# Create test dimensions
-dimensions = AccountingDimension.objects.bulk_create([
-    AccountingDimension(name='account', value='account1', status=StatusChoices.STATUS_ACTIVE),
-    AccountingDimension(name='account', value='account2', status=StatusChoices.STATUS_ACTIVE),
-])
+        for invoice_line in [maintenance_invoice_line, telecom_invoice_line]:
+            invoice_line.save()
 
-for dimension in dimensions:
-    dimension.save()
 
- 
+        # Create test dimensions
+        account1 = AccountingDimension(name='account', value='account1', status=StatusChoices.STATUS_ACTIVE)
+        account2 = AccountingDimension(name='account', value='account2', status=StatusChoices.STATUS_ACTIVE)
+        cost_center1 = AccountingDimension(name='cost_center', value='cost_center1', status=StatusChoices.STATUS_ACTIVE)
 
-# Create test providers
-providers = ServiceProvider.objects.bulk_create([
-    ServiceProvider(name='Provider 1', slug='provider-1'),
-    ServiceProvider(name='Provider 2', slug='provider-2'),
-])
+        for dimension in [account1, account2, cost_center1]:
+            dimension.save()
 
-for provider in providers:
-    provider.save()
+        maintenance_invoice_line.accounting_dimensions.add(account1)
+        telecom_invoice_line.accounting_dimensions.add(account2)
+        maintenance_invoice_line.accounting_dimensions.add(cost_center1)
+        telecom_invoice_line.accounting_dimensions.add(cost_center1)
 
+        # Create invoices
+        invoices = Invoice.objects.bulk_create([
+            Invoice(number='maintenance_invoice1', template=False, date=date(2025, 1, 25),
+                    period_start=date(2025, 1, 1), period_end=date(2025, 12, 31),
+                    currency='usd', amount=Decimal(1500)),
+            Invoice(number='telecom_invoice1', template=False, date=date(2025, 1, 25),
+                    period_start=date(2025, 1, 1), period_end=date(2025, 1, 31),
+                    currency='usd', amount=Decimal(1000)),
+        ])
 

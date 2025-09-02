@@ -5,21 +5,20 @@
 Create a netbox folder.  
 clone the netbox-contract repository. 
 Copy the .devcontainer, requirement.txt, database-init.py, netbox-configuration.py and netbox-configuration-final.py folder/files to your root directory.  
-
+Update the .env file in the .devcontainer folder.  
 Get [netbox demo data](https://github.com/netbox-community/netbox-demo-data) relevant for the version you are working on.  
 
 
 Save the workspace definition file to the root of the netbox folder
 File > Save workspace as  
 
-update the .env file in the .devcontainer folder.  
 
 Press F1
 Dev Container: Rebuild container and reopen in container
 
 ### initialize the database
 
-Copy the requirements.txt file to ythe root of the netbox folder
+Copy the requirements.txt file to the root of the netbox folder
 
 ```bash
 pip install -r requirements.txt
@@ -81,10 +80,11 @@ python3 netbox/netbox/manage.py createsuperuser
 get the database dump from [netbox-demo-data](https://github.com/netbox-community/netbox-demo-data) repository.
 
 ```bash
-psql --host=db --username=postgres --password -c 'drop database netbox'
-psql --host=db --username=postgres --password -c 'create database netbox'
-psql --host=db --username=postgres --password netbox < demo-data.sql
-psql --host=db --username=postgres --password -c "alter database netbox owner to netbox;"
+export PGPASSWORD=$POSTGRES_PASSWORD
+psql --host=db --username=$POSTGRES_USER -c 'drop database netbox'
+psql --host=db --username=$POSTGRES_USER -c 'create database netbox'
+psql --host=db --username=$POSTGRES_USER netbox < netbox-demo-v4.3.sql
+psql --host=db --username=$POSTGRES_USER -c "alter database netbox owner to netbox;"
 ```
 
 ### Test installation
@@ -127,6 +127,17 @@ Test the installation
 cd ..
 python3 netbox/netbox/manage.py runserver
 ```
+
+### Create demo data
+start the rq worker:
+
+```bash
+python3 netbox/netbox/manage.py rqworker high default low
+```
+
+Netbox demo data should be created first.  
+Import the create-demo-data.py custom script and run it.  
+
 
 ## Upgrade Netbox
 
