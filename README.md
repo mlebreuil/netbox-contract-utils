@@ -4,7 +4,7 @@
 
 Create a netbox folder.  
 clone the netbox-contract repository. 
-Copy the .devcontainer, requirement.txt, database-init.py, netbox-configuration.py and netbox-configuration-final.py folder/files to your root directory.  
+Copy the .devcontainer, requirement.txt, database-init.py, netbox-configuration.py and netbox-configuration-final.py configuration_testing.py folder/files to your root directory.  
 Update the .env file in the .devcontainer folder.  
 Get [netbox demo data](https://github.com/netbox-community/netbox-demo-data) relevant for the version you are working on.  
 
@@ -150,8 +150,8 @@ Make sure that netbox-contract is added to the netbox local_requirements.txt.
 
 ```bash
 cd netbox
-git checkout master
-git pull origin master
+git checkout main
+git pull origin main
 ./upgrade.sh
 ```
 
@@ -276,4 +276,19 @@ source netbox/venv/bin/activate
 python netbox/netbox/manage.py migrate
 ```
 
+## run unit tests locally
 
+```bash
+source netbox/venv/bin/activate
+cp configuration_testing.py netbox/netbox/netbox/configuration_testing.py
+export export NETBOX_CONFIGURATION=netbox.configuration_testing
+python netbox/netbox/manage.py test netbox_contract.tests
+```
+
+## Update the query counts for the tests
+
+Set the env variable UPDATE_QUERY_COUNTS before running the tests.
+
+```bash
+export UPDATE_QUERY_COUNTS=1
+```
