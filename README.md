@@ -104,7 +104,7 @@ python3 -m pip install -e netbox-contract
 Update the configuration:
 
 ```bash
-cp netbox-configuration-final.py netbox/netbox/netbox/configuration.py
+cp netbox-configuration-4.6-final.py netbox/netbox/netbox/configuration.py
 ```
 
 run database migrations:
@@ -125,7 +125,7 @@ Test the installation
 
 ```bash
 cd ..
-python3 netbox/netbox/manage.py runserver
+python3 netbox/netbox/manage.py runserver 0.0.0.0:8000 --insecure
 ```
 
 ### Create demo data
