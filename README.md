@@ -281,7 +281,6 @@ python netbox/netbox/manage.py migrate
 ```bash
 source netbox/venv/bin/activate
 cp configuration_testing.py netbox/netbox/netbox/configuration_testing.py
-export export NETBOX_CONFIGURATION=netbox.configuration_testing
 python netbox/netbox/manage.py test netbox_contract.tests
 ```
 
