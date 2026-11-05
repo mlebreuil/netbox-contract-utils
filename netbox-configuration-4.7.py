@@ -17,15 +17,14 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',  # Database engine
-        'NAME': 'netbox',         # Database name
-        'USER': 'netbox',  # PostgreSQL username
-        'PASSWORD': 'netbox',  # PostgreSQL password
-        'HOST': 'db',  # Database server
-        'PORT': '',  # Database port (leave blank for default)
-        'CONN_MAX_AGE': 300,  # Max database connection age
+        'NAME': os.environ.get('NETBOX_DB_NAME', 'netbox'),         # Database name
+        'USER': os.environ.get('NETBOX_DB_USER', 'netbox'),               # PostgreSQL username
+        'PASSWORD': os.environ['NETBOX_DB_PASSWORD'],           # PostgreSQL password
+        'HOST': 'db',      # Database server (dev container service)
+        'PORT': '',               # Database port (leave blank for default)
+        'CONN_MAX_AGE': 300,      # Max database connection age
     }
 }
-
 
 # Redis database settings. Redis is used for caching and for queuing background tasks such as webhook events. A separate
 # configuration exists for each. Full connection details are required in both sections, and it is strongly recommended
@@ -62,14 +61,16 @@ REDIS = {
         # 'INSECURE_SKIP_TLS_VERIFY': False,
         # Set a path to a certificate authority, typically used with a self signed certificate.
         # 'CA_CERT_PATH': '/etc/ssl/certs/ca.crt',
-    },
+    }
 }
 
 # This key is used for secure generation of random numbers and strings. It must never be exposed outside of this file.
 # For optimal security, SECRET_KEY should be at least 50 characters in length and contain a mix of letters, numbers, and
 # symbols. NetBox will not run without this defined. For more information, see
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-SECRET_KEY
-SECRET_KEY = 'random '
+# Generate with: python3 netbox/netbox/generate_secret_key.py
+# Set it in .devcontainer/.env (never commit it).
+SECRET_KEY = os.environ['NETBOX_SECRET_KEY']
 
 # Define a mapping of cryptographic peppers to use when hashing API tokens. A minimum of one pepper is required to
 # enable v2 API tokens (NetBox v4.5+). Define peppers as a mapping of numeric ID to pepper value, as shown below. Each
@@ -79,8 +80,10 @@ SECRET_KEY = 'random '
 #         1: "<random string>",
 #         2: "<random string>",
 #     }
+# Generate with: python3 netbox/netbox/generate_secret_key.py
+# Set it in .devcontainer/.env (never commit it).
 API_TOKEN_PEPPERS = {
-    1:"random > 50 char"
+    1: os.environ['NETBOX_API_TOKEN_PEPPER'],
 }
 
 
@@ -130,6 +133,9 @@ CSRF_COOKIE_NAME = 'csrftoken'
 # on a production system.
 DEBUG = False
 
+# Development environment: allows 'manage.py makemigrations'.
+DEVELOPER = True
+
 # Set the default preferred language/locale
 DEFAULT_LANGUAGE = 'en-us'
 
@@ -158,23 +164,6 @@ EXEMPT_VIEW_PERMISSIONS = [
     # 'ipam.prefix',
 ]
 
-FIELD_CHOICES = {
-    'netbox_contract.Contract.internal_partie': (
-        ('entity1', 'Entity 1', 'green'),
-        ('entity2', 'Entity 2', 'yellow'),
-    ),
-    'netbox_contract.Contract.currency': (
-        ('usd', 'USD'),
-        ('eur', 'EUR'),
-        ('chf', 'CHF'),
-        ('pln', 'PLN'),
-    ),
-    'netbox_contract.Contract.status': (
-        ('active', 'Active', 'green'),
-        ('canceled', 'Canceled', 'red'),
-    ),
-}
-
 # HTTP proxies NetBox should use when sending outbound HTTP requests (e.g. for webhooks).
 # HTTP_PROXIES = {
 #     'http': 'http://10.10.1.10:3128',
@@ -201,7 +190,7 @@ LOGOUT_REDIRECT_URL = 'home'
 
 # The file path where uploaded media such as image attachments are stored. A trailing slash is not needed. Note that
 # the default value of this setting is derived from the installed location.
-# MEDIA_ROOT = '/opt/netbox/netbox/media'
+# MEDIA_ROOT = '/path/to/netbox/media'
 
 # Expose Prometheus monitoring metrics at the HTTP endpoint '/metrics'
 METRICS_ENABLED = False
@@ -211,15 +200,12 @@ PLUGINS = []
 
 # Plugins configuration settings. These settings are used by various plugins that the user may have installed.
 # Each key in the dictionary is the name of an installed plugin and its value is a dictionary of settings.
-PLUGINS_CONFIG = {
-    'netbox_contract': {
-        'top_level_menu': True,
-        'mandatory_contract_fields': [],
-        'hidden_contract_fields': [],
-        'mandatory_invoice_fields': [],
-        'hidden_invoice_fields': [],
-    }
-}
+# PLUGINS_CONFIG = {
+#     'my_plugin': {
+#         'foo': 'bar',
+#         'buzz': 'bazz'
+#     }
+# }
 
 # Remote authentication support
 REMOTE_AUTH_ENABLED = False
@@ -239,14 +225,20 @@ RELEASE_CHECK_URL = None
 
 # The file path where custom reports will be stored. A trailing slash is not needed. Note that the default value of
 # this setting is derived from the installed location.
-# REPORTS_ROOT = '/opt/netbox/netbox/reports'
+# REPORTS_ROOT = '/path/to/netbox/reports'
 
 # Maximum execution time for background tasks, in seconds.
 RQ_DEFAULT_TIMEOUT = 300
 
 # The file path where custom scripts will be stored. A trailing slash is not needed. Note that the default value of
 # this setting is derived from the installed location.
-# SCRIPTS_ROOT = '/opt/netbox/netbox/scripts'
+# SCRIPTS_ROOT = '/path/to/netbox/scripts'
+
+# The default maximum time (in seconds) to wait for a response when sending a webhook, unless overridden on the
+# individual webhook. Keeping this below RQ_DEFAULT_TIMEOUT gives an unresponsive receiver a chance to be cut off
+# by the request timeout rather than by termination of the background job. This must be less than
+# RQ_DEFAULT_TIMEOUT.
+WEBHOOK_DEFAULT_TIMEOUT = 60
 
 # The name to use for the session cookie.
 SESSION_COOKIE_NAME = 'sessionid'
@@ -276,7 +268,7 @@ SESSION_FILE_PATH = None
 #         "OPTIONS": {
 #             "allow_overwrite": True,
 #         },
-#     },netbox-contract-utils/netbox-configuration-4.6.py
+#     },
 # }
 
 # Time zone (default: UTC)

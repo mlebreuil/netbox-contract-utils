@@ -1,0 +1,4 @@
+# Local environment: database passwords and NetBox secrets. Copy .devcontainer/.env.example.
+.devcontainer/.env
+__pycache__/
+*.pyc

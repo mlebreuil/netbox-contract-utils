@@ -10,17 +10,20 @@ import os
 # access to the server via any other hostnames. The first FQDN in the list will be treated as the preferred name.
 #
 # Example: ALLOWED_HOSTS = ['netbox.example.com', 'netbox.internal.local']
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 # PostgreSQL database configuration. See the Django documentation for a complete list of available parameters:
 #   https://docs.djangoproject.com/en/stable/ref/settings/#databases
-DATABASE = {
-    'NAME': 'netbox',  # Database name
-    'USER': 'netbox',  # PostgreSQL username
-    'PASSWORD': 'netbox',  # PostgreSQL password
-    'HOST': 'db',  # Database server
-    'PORT': '',  # Database port (leave blank for default)
-    'CONN_MAX_AGE': 300,  # Max database connection age
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',  # Database engine
+        'NAME': os.environ.get('NETBOX_DB_NAME', 'netbox'),         # Database name
+        'USER': os.environ.get('NETBOX_DB_USER', 'netbox'),               # PostgreSQL username
+        'PASSWORD': os.environ['NETBOX_DB_PASSWORD'],           # PostgreSQL password
+        'HOST': 'db',      # Database server (dev container service)
+        'PORT': '',               # Database port (leave blank for default)
+        'CONN_MAX_AGE': 300,      # Max database connection age
+    }
 }
 
 # Redis database settings. Redis is used for caching and for queuing background tasks such as webhook events. A separate
@@ -58,14 +61,30 @@ REDIS = {
         # 'INSECURE_SKIP_TLS_VERIFY': False,
         # Set a path to a certificate authority, typically used with a self signed certificate.
         # 'CA_CERT_PATH': '/etc/ssl/certs/ca.crt',
-    },
+    }
 }
 
 # This key is used for secure generation of random numbers and strings. It must never be exposed outside of this file.
 # For optimal security, SECRET_KEY should be at least 50 characters in length and contain a mix of letters, numbers, and
 # symbols. NetBox will not run without this defined. For more information, see
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-SECRET_KEY
-SECRET_KEY = '@bN8Z6vykN7zOtz1$-ExJ)Ps%bwC+%U=oN*hZCE^CR9R4y@yYi'
+# Generate with: python3 netbox/netbox/generate_secret_key.py
+# Set it in .devcontainer/.env (never commit it).
+SECRET_KEY = os.environ['NETBOX_SECRET_KEY']
+
+# Define a mapping of cryptographic peppers to use when hashing API tokens. A minimum of one pepper is required to
+# enable v2 API tokens (NetBox v4.5+). Define peppers as a mapping of numeric ID to pepper value, as shown below. Each
+# pepper must be at least 50 characters in length.
+#
+#     API_TOKEN_PEPPERS = {
+#         1: "<random string>",
+#         2: "<random string>",
+#     }
+# Generate with: python3 netbox/netbox/generate_secret_key.py
+# Set it in .devcontainer/.env (never commit it).
+API_TOKEN_PEPPERS = {
+    1: os.environ['NETBOX_API_TOKEN_PEPPER'],
+}
 
 
 #########################
@@ -106,12 +125,19 @@ CORS_ORIGIN_REGEX_WHITELIST = [
     # r'^(https?://)?(\w+\.)?example\.com$',
 ]
 
+# The name to use for the CSRF token cookie.
+CSRF_COOKIE_NAME = 'csrftoken'
+
 # Set to True to enable server debugging. WARNING: Debugging introduces a substantial performance penalty and may reveal
 # sensitive information about your installation. Only enable debugging while performing testing. Never enable debugging
 # on a production system.
-DEBUG = True
+DEBUG = False
 
+# Development environment: allows 'manage.py makemigrations'.
 DEVELOPER = True
+
+# Set the default preferred language/locale
+DEFAULT_LANGUAGE = 'en-us'
 
 # Email settings
 EMAIL = {
@@ -125,6 +151,11 @@ EMAIL = {
     'FROM_EMAIL': '',
 }
 
+# Return CSV bulk exports as a streaming HTTP response, which avoids buffering the entire dataset in memory before
+# sending it to the client. This is recommended for very large exports, but it alters the response behavior so it is
+# disabled by default.
+STREAMING_EXPORTS = False
+
 # Exempt certain models from the enforcement of view permissions. Models listed here will be viewable by all users and
 # by anonymous users. List models in the form `<app>.<model>`. Add '*' to this list to exempt all models.
 EXEMPT_VIEW_PERMISSIONS = [
@@ -133,8 +164,51 @@ EXEMPT_VIEW_PERMISSIONS = [
     # 'ipam.prefix',
 ]
 
+# HTTP proxies NetBox should use when sending outbound HTTP requests (e.g. for webhooks).
+# HTTP_PROXIES = {
+#     'http': 'http://10.10.1.10:3128',
+#     'https': 'http://10.10.1.10:1080',
+# }
+
+# Enable custom logging. Please see the Django documentation for detailed guidance on configuring custom logs:
+#   https://docs.djangoproject.com/en/stable/topics/logging/
+LOGGING = {}
+
+# Automatically reset the lifetime of a valid session upon each authenticated request. Enables users to remain
+# authenticated to NetBox indefinitely.
+LOGIN_PERSISTENCE = False
+
+# The length of time (in seconds) for which a user will remain logged into the web UI before being prompted to
+# re-authenticate. If set to None (the default), Django's SESSION_COOKIE_AGE is used (two weeks).
+LOGIN_TIMEOUT = None
+
+# Hide the login form. Useful when only allowing SSO authentication.
+LOGIN_FORM_HIDDEN = False
+
+# The view name or URL to which users are redirected after logging out.
+LOGOUT_REDIRECT_URL = 'home'
+
+# The file path where uploaded media such as image attachments are stored. A trailing slash is not needed. Note that
+# the default value of this setting is derived from the installed location.
+# MEDIA_ROOT = '/path/to/netbox/media'
+
+# Expose Prometheus monitoring metrics at the HTTP endpoint '/metrics'
+METRICS_ENABLED = False
+
+# Enable installed plugins. Add the name of each plugin to the list.
+PLUGINS = ['netbox_contract']
+
+# Plugins configuration settings. These settings are used by various plugins that the user may have installed.
+# Each key in the dictionary is the name of an installed plugin and its value is a dictionary of settings.
+PLUGINS_CONFIG = {
+    'netbox_contract': {
+        'top_level_menu': True,
+    }
+}
+
+# Choices of the plugin fields. See the plugin documentation.
 FIELD_CHOICES = {
-    'netbox_contract.Contract.internal_partie': (
+    'netbox_contract.Contract.internal_party': (
         ('entity1', 'Entity 1', 'green'),
         ('entity2', 'Entity 2', 'yellow'),
     ),
@@ -150,70 +224,13 @@ FIELD_CHOICES = {
     ),
 }
 
-# HTTP proxies NetBox should use when sending outbound HTTP requests (e.g. for webhooks).
-# HTTP_PROXIES = {
-#     'http': 'http://10.10.1.10:3128',
-#     'https': 'http://10.10.1.10:1080',
-# }
-
-# IP addresses recognized as internal to the system. The debugging toolbar will be available only to clients accessing
-# NetBox from an internal IP.
-INTERNAL_IPS = ('127.0.0.1', '::1')
-
-# Enable custom logging. Please see the Django documentation for detailed guidance on configuring custom logs:
-#   https://docs.djangoproject.com/en/stable/topics/logging/
-LOGGING = {}
-
-# Automatically reset the lifetime of a valid session upon each authenticated request. Enables users to remain
-# authenticated to NetBox indefinitely.
-LOGIN_PERSISTENCE = False
-
-# Setting this to True will permit only authenticated users to access any part of NetBox. By default, anonymous users
-# are permitted to access most data in NetBox but not make any changes.
-LOGIN_REQUIRED = False
-
-# The length of time (in seconds) for which a user will remain logged into the web UI before being prompted to
-# re-authenticate. (Default: 1209600 [14 days])
-LOGIN_TIMEOUT = None
-
-# The file path where uploaded media such as image attachments are stored. A trailing slash is not needed. Note that
-# the default value of this setting is derived from the installed location.
-# MEDIA_ROOT = '/opt/netbox/netbox/media'
-
-# By default uploaded media is stored on the local filesystem. Using Django-storages is also supported. Provide the
-# class path of the storage driver in STORAGE_BACKEND and any configuration options in STORAGE_CONFIG. For example:
-# STORAGE_BACKEND = 'storages.backends.s3boto3.S3Boto3Storage'
-# STORAGE_CONFIG = {
-#     'AWS_ACCESS_KEY_ID': 'Key ID',
-#     'AWS_SECRET_ACCESS_KEY': 'Secret',
-#     'AWS_STORAGE_BUCKET_NAME': 'netbox',
-#     'AWS_S3_REGION_NAME': 'eu-west-1',
-# }
-
-# Expose Prometheus monitoring metrics at the HTTP endpoint '/metrics'
-METRICS_ENABLED = False
-
-# Enable installed plugins. Add the name of each plugin to the list.
-PLUGINS = [
-    'netbox_contract',
-]
-
-# Plugins configuration settings. These settings are used by various plugins that the user may have installed.
-# Each key in the dictionary is the name of an installed plugin and its value is a dictionary of settings.
-PLUGINS_CONFIG = {
-    'netbox_contract': {
-        'top_level_menu': True,
-        'mandatory_contract_fields': [],
-        'hidden_contract_fields': [],
-        'mandatory_invoice_fields': [],
-        'hidden_invoice_fields': [],
-    }
-}
-
 # Remote authentication support
 REMOTE_AUTH_ENABLED = False
 REMOTE_AUTH_BACKEND = 'netbox.authentication.RemoteUserBackend'
 REMOTE_AUTH_HEADER = 'HTTP_REMOTE_USER'
+REMOTE_AUTH_USER_FIRST_NAME = 'HTTP_REMOTE_USER_FIRST_NAME'
+REMOTE_AUTH_USER_LAST_NAME = 'HTTP_REMOTE_USER_LAST_NAME'
+REMOTE_AUTH_USER_EMAIL = 'HTTP_REMOTE_USER_EMAIL'
 REMOTE_AUTH_AUTO_CREATE_USER = True
 REMOTE_AUTH_DEFAULT_GROUPS = []
 REMOTE_AUTH_DEFAULT_PERMISSIONS = {}
@@ -225,17 +242,20 @@ RELEASE_CHECK_URL = None
 
 # The file path where custom reports will be stored. A trailing slash is not needed. Note that the default value of
 # this setting is derived from the installed location.
-# REPORTS_ROOT = '/opt/netbox/netbox/reports'
+# REPORTS_ROOT = '/path/to/netbox/reports'
 
 # Maximum execution time for background tasks, in seconds.
 RQ_DEFAULT_TIMEOUT = 300
 
 # The file path where custom scripts will be stored. A trailing slash is not needed. Note that the default value of
 # this setting is derived from the installed location.
-# SCRIPTS_ROOT = '/opt/netbox/netbox/scripts'
+# SCRIPTS_ROOT = '/path/to/netbox/scripts'
 
-# The name to use for the csrf token cookie.
-CSRF_COOKIE_NAME = 'csrftoken'
+# The default maximum time (in seconds) to wait for a response when sending a webhook, unless overridden on the
+# individual webhook. Keeping this below RQ_DEFAULT_TIMEOUT gives an unresponsive receiver a chance to be cut off
+# by the request timeout rather than by termination of the background job. This must be less than
+# RQ_DEFAULT_TIMEOUT.
+WEBHOOK_DEFAULT_TIMEOUT = 60
 
 # The name to use for the session cookie.
 SESSION_COOKIE_NAME = 'sessionid'
@@ -245,14 +265,28 @@ SESSION_COOKIE_NAME = 'sessionid'
 # database access.) Note that the user as which NetBox runs must have read and write permissions to this path.
 SESSION_FILE_PATH = None
 
+# By default the memory and disk sizes are displayed using base 10 (e.g. 1000 MB = 1 GB).
+# If you would like to use base 2 (e.g. 1024 MB = 1 GB) set this to 1024.
+# DISK_BASE_UNIT = 1024
+# RAM_BASE_UNIT = 1024
+
+# Within the STORAGES dictionary, "default" is used for image uploads, "staticfiles" is for static files and "scripts"
+# is used for custom scripts. See django-storages and django-storage-swift libraries for more details. By default the
+# following configuration is used:
+# STORAGES = {
+#     "default": {
+#         "BACKEND": "django.core.files.storage.FileSystemStorage",
+#     },
+#     "staticfiles": {
+#         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+#     },
+#     "scripts": {
+#         "BACKEND": "extras.storage.ScriptFileSystemStorage",
+#         "OPTIONS": {
+#             "allow_overwrite": True,
+#         },
+#     },
+# }
+
 # Time zone (default: UTC)
 TIME_ZONE = 'UTC'
-
-# Date/time formatting. See the following link for supported formats:
-# https://docs.djangoproject.com/en/stable/ref/templates/builtins/#date
-DATE_FORMAT = 'N j, Y'
-SHORT_DATE_FORMAT = 'Y-m-d'
-TIME_FORMAT = 'g:i a'
-SHORT_TIME_FORMAT = 'H:i:s'
-DATETIME_FORMAT = 'N j, Y g:i a'
-SHORT_DATETIME_FORMAT = 'Y-m-d H:i'

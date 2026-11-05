@@ -1,23 +1,58 @@
-// Update the VARIANT arg in docker-compose.yml to pick a Python version
 {
-	"name": "Python 3 & PostgreSQL",
+	"name": "NetBox plugin (Python 3 & PostgreSQL)",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+	"workspaceFolder": "/workspaces/netbox",
 
-	// Features to add to the dev container. More info: https://containers.dev/implementors/features.
-	// "features": {},
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers/features/node:1": {},
+		"ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+	},
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// This can be used to network with other containers or the host.
-	// "forwardPorts": [5000, 5432],
+	// Make NetBox (runserver 0.0.0.0:8000) reachable from the Mac.
+	"forwardPorts": [8000],
+	"portsAttributes": {
+		"8000": { "label": "NetBox", "onAutoForward": "notify" }
+	},
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "pip install --user -r requirements.txt",
+	// Dependencies for database_init.py (psycopg, python-dotenv).
+	"postCreateCommand": "pip install --user -r requirements.txt",
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+	// psql / pg_dump / pg_restore work without flags (README uses --host=db).
+	"remoteEnv": {
+		"PGHOST": "db",
+		"PGUSER": "${containerEnv:POSTGRES_USER}",
+		"PGPASSWORD": "${containerEnv:POSTGRES_PASSWORD}"
+	},
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	// Keep the Claude Code login/config across container rebuilds.
+	"mounts": [
+		"source=netbox-dev-claude-config,target=/home/vscode/.claude,type=volume"
+	],
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-python.debugpy",
+				"charliermarsh.ruff",
+				"batisteo.vscode-django",
+				"redhat.vscode-yaml"
+			],
+			"settings": {
+				// The venv is created later by netbox/upgrade.sh. Until then VS Code falls back to the
+				// system Python; after upgrade.sh, run "Developer: Reload Window" to pick up the venv.
+				"python.defaultInterpreterPath": "${containerWorkspaceFolder}/netbox/venv/bin/python",
+				"python.terminal.activateEnvironment": true,
+				"[python]": {
+					"editor.defaultFormatter": "charliermarsh.ruff",
+					"editor.formatOnSave": true,
+					"editor.codeActionsOnSave": { "source.fixAll.ruff": "explicit" }
+				},
+				"files.associations": { "**/templates/**/*.html": "django-html" }
+			}
+		}
+	}
 }
