@@ -28,5 +28,20 @@ Rules:
 ## Repositories
 
 - `netbox/`: clone of netbox-community/netbox (not to be modified)
-- `netbox-contract/`: the plugin; follow its `AGENTS.md`, including the AI policy
+- `netbox-contract/`: the plugin, whose instructions are imported below
 - `netbox-contract-utils/`: the files of this environment (devcontainer, configuration, README)
+
+## Plugin instructions (netbox-contract)
+
+The instructions of the plugin repository follow, including its AI policy. They describe the container layout and give
+the commands to run there: run those commands through `./dc`, as explained above.
+
+@netbox-contract/CLAUDE.md
+
+## Hand-off from the previous session (netbox-contract)
+
+If `netbox-contract/HANDOFF.md` exists, it is imported below: where the previous session stopped. It is a note, not a
+set of rules. It can be out of date, so check the branch, `git status` and `git log` before relying on it. It is deleted
+when its work is merged, and when it is missing there is no hand-off.
+
+@netbox-contract/HANDOFF.md
