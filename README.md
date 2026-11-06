@@ -279,6 +279,10 @@ NETBOX_CONFIGURATION=netbox.configuration_testing python3 netbox/manage.py test 
 
 `--keepdb` keeps the test database between runs. Drop it if you need a fresh test database.
 
+`configuration_testing.py` is the dev container version of the configuration used by CI: the database credentials come
+from `.devcontainer/.env`, and the tests use Redis databases 2 and 3 so that a test run does not flush the queue and the
+cache of the development server (databases 0 and 1).
+
 ### Update the query counts for the tests
 
 Set the `UPDATE_QUERY_COUNTS` environment variable before running the tests, and run them serially (no `--parallel`):

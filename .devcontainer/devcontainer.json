@@ -16,8 +16,9 @@
 		"8000": { "label": "NetBox", "onAutoForward": "notify" }
 	},
 
-	// Dependencies for database_init.py (psycopg, python-dotenv).
-	"postCreateCommand": "pip install --user -r requirements.txt",
+	// The ~/.claude volume is created owned by root: give it to vscode so Claude Code can write its files.
+	// Then install the dependencies of database_init.py (psycopg).
+	"postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.claude && pip install --user -r requirements.txt",
 
 	// psql / pg_dump / pg_restore work without flags (README uses --host=db).
 	"remoteEnv": {
@@ -51,7 +52,35 @@
 					"editor.formatOnSave": true,
 					"editor.codeActionsOnSave": { "source.fixAll.ruff": "explicit" }
 				},
-				"files.associations": { "**/templates/**/*.html": "django-html" }
+				"files.associations": { "**/templates/**/*.html": "django-html" },
+				// Keep the virtualenvs and build output out of the file watcher, search and indexing:
+				// they hold tens of thousands of files, read through the slow bind mount.
+				"files.watcherExclude": {
+					"**/venv/**": true,
+					"**/.venv/**": true,
+					"**/node_modules/**": true,
+					"**/build/**": true,
+					"**/*.egg-info/**": true,
+					"**/__pycache__/**": true,
+					"**/.ruff_cache/**": true,
+					"**/.git/objects/**": true
+				},
+				"search.exclude": {
+					"**/venv": true,
+					"**/.venv": true,
+					"**/node_modules": true,
+					"**/build": true,
+					"**/*.egg-info": true,
+					"**/__pycache__": true,
+					"**/netbox-demo-*.sql": true
+				},
+				"python.analysis.exclude": [
+					"**/venv",
+					"**/.venv",
+					"**/node_modules",
+					"**/build",
+					"**/__pycache__"
+				]
 			}
 		}
 	}
