@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Run a command in the NetBox dev container from the Mac.
+# See the README, section "Run Claude Code on the Mac".
+#
+#   ./dc <command> [args...]    run a command, in the container folder that matches the current folder
+#   ./dc manage <args...>       netbox/venv/bin/python netbox/manage.py <args> (run from the NetBox checkout)
+#   ./dc test [args...]         the unit tests with the test configuration (default: whole suite, --keepdb)
+#   ./dc shell                  interactive shell
+#   ./dc up                     start the dev container (VS Code does it when you reopen the folder in the container)
+#
+# The folder containing this script is the root folder of the dev environment
+# (mounted in the container at /workspaces/netbox).
+set -euo pipefail
+
+# Docker prints "What's next: Try Docker Debug ..." hints on stderr after container commands: keep them out of the output
+export DOCKER_CLI_HINTS=false
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+CONTAINER_ROOT=/workspaces/netbox
+
+if ! command -v devcontainer >/dev/null 2>&1; then
+    echo "dc: the devcontainer CLI is not installed. Install it with: brew install devcontainer (see the README for npm)" >&2
+    exit 127
+fi
+
+# The folder of the caller, as seen in the container (the root folder when called from elsewhere)
+HERE="$(pwd -P)"
+case "$HERE" in
+    "$ROOT") WORKDIR="$CONTAINER_ROOT" ;;
+    "$ROOT"/*) WORKDIR="$CONTAINER_ROOT/${HERE#"$ROOT"/}" ;;
+    *) WORKDIR="$CONTAINER_ROOT" ;;
+esac
+
+# run_in <container folder> <command> [args...]: the arguments reach the command unchanged
+run_in() {
+    local dir="$1"
+    shift
+    devcontainer exec --workspace-folder "$ROOT" bash -c 'cd "$1" && shift && exec "$@"' dc "$dir" "$@"
+}
+
+if [ $# -eq 0 ]; then
+    sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    exit 2
+fi
+
+case "$1" in
+    up)
+        shift
+        exec devcontainer up --workspace-folder "$ROOT" "$@"
+        ;;
+    shell)
+        run_in "$WORKDIR" bash -l
+        ;;
+    manage)
+        shift
+        run_in "$CONTAINER_ROOT/netbox" venv/bin/python netbox/manage.py "$@"
+        ;;
+    test)
+        shift
+        if [ $# -eq 0 ]; then
+            set -- netbox_contract.tests --keepdb
+        fi
+        run_in "$CONTAINER_ROOT/netbox" env NETBOX_CONFIGURATION=netbox.configuration_testing \
+            venv/bin/python netbox/manage.py test "$@"
+        ;;
+    *)
+        run_in "$WORKDIR" "$@"
+        ;;
+esac

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./dc:*)",
+      "Bash(../dc:*)"
+    ],
+    "deny": [
+      "Read(./netbox/venv/**)"
+    ]
+  }
+}

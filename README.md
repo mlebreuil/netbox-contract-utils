@@ -19,6 +19,9 @@ in the container (at `/workspaces/netbox`).
 ```text
 netbox/                          <- root folder, opened in VS Code
 ├── .devcontainer/               <- from this repository (keep your own .env)
+├── .claude/settings.json        <- Claude Code permissions (optional, see "Run Claude Code on the Mac")
+├── CLAUDE.md                    <- instructions for Claude Code (optional)
+├── dc                           <- runs a command in the dev container from the Mac (optional)
 ├── netbox/                      <- clone of netbox-community/netbox (venv is created in netbox/venv)
 ├── netbox-contract/             <- clone of the plugin repository
 ├── netbox-demo-v4.7.sql         <- netbox demo data, same major.minor as the NetBox clone
@@ -42,7 +45,9 @@ netbox/                          <- root folder, opened in VS Code
    cd netbox-contract-utils
    cp -R .devcontainer ..
    cp requirements.txt database_init.py configuration_testing.py \
-      netbox-configuration-4.7.py netbox-configuration-4.7-final.py ..
+      netbox-configuration-4.7.py netbox-configuration-4.7-final.py dc ..
+   cp claude/CLAUDE.md ../CLAUDE.md
+   mkdir -p ../.claude && cp claude/settings.json ../.claude/settings.json
    cd ..
    ```
 
@@ -341,6 +346,69 @@ source netbox/venv/bin/activate
 python3 -m pip install pre-commit
 pre-commit install
 ```
+
+## Run Claude Code on the Mac
+
+Claude Code can run in a Mac terminal while the development environment stays in the dev container. The root folder is
+shared with the container, so Claude reads and edits the files directly on the Mac, and runs everything that needs
+Python, PostgreSQL or Redis in the container through the `dc` script. VS Code keeps the container running (open the root
+folder in the container as usual).
+
+Setup, once:
+
+1. Install the dev container command-line tool on the Mac, with Homebrew:
+
+   ```bash
+   brew install devcontainer
+   ```
+
+   or with npm, in a folder you own (a plain `npm install -g` fails with `EACCES` when Node is installed in
+   `/usr/local`; do not use `sudo`):
+
+   ```bash
+   mkdir -p ~/.npm-global
+   npm config set prefix ~/.npm-global
+   echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.zshrc
+   source ~/.zshrc
+   npm install -g @devcontainers/cli
+   ```
+
+2. Make sure `dc`, `CLAUDE.md` and `.claude/settings.json` are in the root folder (see
+   [Create the dev container](#create-the-dev-container)) and that `dc` is executable (`chmod +x dc`).
+3. Check that it works, with the container running:
+
+   ```bash
+   cd ~/github/netbox
+   ./dc echo hello --version
+   ./dc pwd
+   ```
+
+   The first command must print `hello --version`, the second `/workspaces/netbox`.
+
+Usage: start `claude` from the root folder.
+
+| Command | What it does |
+|---|---|
+| `./dc <command> [args]` | Runs the command in the container, in the folder that matches the current one (`../dc` from a repository folder) |
+| `./dc test [args]` | Unit tests with the test configuration; without argument the whole suite with `--keepdb` |
+| `./dc manage <args>` | `netbox/manage.py` with the NetBox virtual environment |
+| `./dc shell` | Interactive shell in the container |
+| `./dc up` | Starts the container without VS Code |
+
+What lets later sessions use it:
+
+- `CLAUDE.md` in the root folder tells Claude that it runs on the Mac, that Python, tests and pre-commit run in the
+  container through `dc`, and how paths map (`/workspaces/netbox` is the root folder). Claude Code reads it when started
+  from the root folder or from a folder below it.
+- `.claude/settings.json` allows `./dc` and `../dc` without a prompt and denies reading `netbox/venv`. It lets Claude run
+  any command in the container as the `vscode` user, which is what it needs to test; it gives no other access to Docker.
+  It is read when `claude` starts in the root folder.
+- Commits are made in the container (`./dc git commit …`), where the pre-commit hook is installed: the hook points to the
+  virtual environment of the container and does not work on the Mac. VS Code copies your git identity into the
+  container when it is attached.
+- Paths in tracebacks are container paths: `/workspaces/netbox/...` is the root folder on the Mac.
+- The unit tests need `configuration_testing.py` copied into NetBox (see
+  [Run unit tests locally](#run-unit-tests-locally)).
 
 ## Backup and restore the db
 
