@@ -263,15 +263,17 @@ python3 -m pip install netbox-contract
 
 ## Create demo data
 
-Netbox demo data should be loaded first.
-
-Start the rq worker:
+Netbox demo data should be loaded first. The plugin ships a management command, which refuses to run unless
+`DEVELOPER = True` (it is in the configuration files of this repository):
 
 ```bash
-python3 netbox/netbox/manage.py rqworker high default low
+python3 netbox/netbox/manage.py create_demo_data
 ```
 
-Import the `create-demo-data.py` custom script in NetBox (Customization > Scripts) and run it.
+It creates named scenarios (contract lines of each billing method, hierarchy, Posted, Draft and Canceled invoices,
+amendments, legacy data, numeric edge cases) tagged `netbox-contract-demo`, and skips those that already exist.
+`--reset` deletes the tagged objects first. This replaces the former `create-demo-data.py` custom script, which needed
+the RQ worker.
 
 ## Run unit tests locally
 
